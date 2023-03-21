@@ -1,0 +1,48 @@
+section .data
+    buffer db 16     ; buffer size
+    keys db 0        ; count of keys pressed
+    msg db "Keys pressed: "
+    msg_len equ $-msg
+
+section .bss
+    buffer_res resb buffer
+
+section .text
+    global _start
+
+_start:
+    ; allocate memory for buffer
+    mov eax, 9      ; syscalls for brk (request additional heap memory)
+    mov ebx, buffer + buffer    ; current heap pointer
+    add ebx, buffer              ; amount of memory to allocate
+    int 0x80                    ; syscall
+    mov [buffer_res], eax       ; store pointer to new memory
+
+    ; read keys
+    mov edx, buffer             ; pointer to buffer
+    mov ecx, buffer             ; pointer to buffer
+    add ecx, buffer             ; end of buffer
+    mov eax, 3                  ; syscall for read (read input from STDIN)
+    mov ebx, 0                  ; STDIN
+    int 0x80                    ; syscall
+    sub eax, 1                  ; ignore newline character
+    mov [keys], eax             ; store number of keys pressed
+
+    ; display keys
+    mov eax, 4                  ; syscall for write (print output to STDOUT)
+    mov ebx, 1                  ; STDOUT
+    mov ecx, msg                ; pointer to message
+    mov edx, msg_len            ; message length
+    int 0x80
+
+    ; display key buffer
+    mov eax, 4                  ; syscall for write (print output to STDOUT)
+    mov ebx, 1                  ; STDOUT
+    mov ecx, buffer             ; pointer to buffer
+    mov edx, [keys]             ; number of keys to print
+    int 0x80
+
+    ; exit program
+    mov eax, 1                  ; syscall for exit
+    xor ebx, ebx                ; exit code 0
+    int 0x80
